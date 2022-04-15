@@ -47,9 +47,9 @@ public:
   void print(void);
 
   const std::string &getPackageFilename(void) const { return _package_filename; }
-#if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
   const std::string &getDumpFilename(void) const { return _dump_filename; }
   const std::string &getLoadFilename(void) const { return _load_filename; }
+#if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
   WhenToUseH5Shape getWhenToUseH5Shape(void) const { return _when_to_use_h5_shape; }
 #endif
   const std::string &getDumpRawFilename(void) const { return _dump_raw_filename; }
@@ -77,9 +77,9 @@ private:
   po::options_description _options;
 
   std::string _package_filename;
-#if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
   std::string _dump_filename;
   std::string _load_filename;
+#if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
   WhenToUseH5Shape _when_to_use_h5_shape = WhenToUseH5Shape::NOT_PROVIDED;
 #endif
   std::string _dump_raw_filename;

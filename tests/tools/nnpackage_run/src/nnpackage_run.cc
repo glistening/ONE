@@ -17,9 +17,7 @@
 #include "allocation.h"
 #include "args.h"
 #include "benchmark.h"
-#if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
 #include "h5formatter.h"
-#endif
 #include "nnfw.h"
 #include "nnfw_util.h"
 #include "nnfw_internal.h"
@@ -161,9 +159,8 @@ int main(const int argc, char **argv)
     verifyInputTypes();
     verifyOutputTypes();
 
-// set input shape before compilation
+    // set input shape before compilation
 #if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
-
     auto fill_shape_from_h5 = [&session](const std::string &h5_file, TensorShapeMap &shape_map) {
       assert(!h5_file.empty());
       auto shapes = H5Formatter(session).readTensorShapes(h5_file);
@@ -182,7 +179,7 @@ int main(const int argc, char **argv)
       NNPR_ENSURE_STATUS(nnfw_prepare(session));
     });
 
-// set input shape after compilation and before execution
+    // set input shape after compilation and before execution
 #if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
     if (args.getWhenToUseH5Shape() == WhenToUseH5Shape::RUN ||
         (!args.getLoadFilename().empty() && !args.shapeParamProvided()))
@@ -192,19 +189,12 @@ int main(const int argc, char **argv)
 
     // prepare input
     std::vector<Allocation> inputs(num_inputs);
-#if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
     if (!args.getLoadFilename().empty())
       H5Formatter(session).loadInputs(args.getLoadFilename(), inputs);
     else if (!args.getLoadRawFilename().empty())
       RawFormatter(session).loadInputs(args.getLoadRawFilename(), inputs);
     else
       RandomGenerator(session).generate(inputs);
-#else
-    if (!args.getLoadRawFilename().empty())
-      RawFormatter(session).loadInputs(args.getLoadRawFilename(), inputs);
-    else
-      RandomGenerator(session).generate(inputs);
-#endif
 
     // prepare output
     uint32_t num_outputs = 0;
@@ -268,11 +258,9 @@ int main(const int argc, char **argv)
         args.getNumRuns(), true);
     }
 
-#if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
     // dump output tensors
     if (!args.getDumpFilename().empty())
       H5Formatter(session).dumpOutputs(args.getDumpFilename(), outputs);
-#endif
     if (!args.getDumpRawFilename().empty())
       RawFormatter(session).dumpOutputs(args.getDumpRawFilename(), outputs);
 

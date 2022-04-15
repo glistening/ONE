@@ -197,10 +197,8 @@ void Args::Initialize(void)
     ("help,h", "Print available options")
     ("version", "Print version and exit immediately")
     ("nnpackage", po::value<std::string>()->required()->notifier(process_nnpackage))
-#if defined(ONERT_HAVE_HDF5) && ONERT_HAVE_HDF5 == 1
     ("dump,d", po::value<std::string>()->default_value("")->notifier([&](const auto &v) { _dump_filename = v; }), "Output filename")
     ("load,l", po::value<std::string>()->default_value("")->notifier([&](const auto &v) { _load_filename = v; }), "Input filename")
-#endif
     ("dump:raw", po::value<std::string>()->default_value("")->notifier([&](const auto &v) { _dump_raw_filename = v; }), "Raw Output filename")
     ("load:raw", po::value<std::string>()->default_value("")->notifier([&](const auto &v) { _load_raw_filename = v; }), "Raw Input filename")
     ("output_sizes", po::value<std::string>()->notifier(process_output_sizes),
