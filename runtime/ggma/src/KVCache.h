@@ -45,7 +45,13 @@ struct KVCache
   KVCacheDataType data_type;           // Data type for KV cache
   std::vector<std::vector<uint8_t>> k; // Key caches for each layer (raw byte storage)
   std::vector<std::vector<uint8_t>> v; // Value caches for each layer (raw byte storage)
-  int64_t _pos = 0;                    // Current position in KV cache
+
+  // Logical shape of each layer's buffer: [1, seq_len, num_heads, head_dim]
+  // Updated after transpose() to reflect the permuted layout.
+  size_t _shape[4] = {0, 0, 0, 0};
+
+  // Current position in KV cache (number of tokens written so far)
+  int64_t _pos = 0;
 
   // Get element size in bytes based on data type
   size_t element_size() const
@@ -95,18 +101,17 @@ struct KVCache
   void advance_pos() { _pos++; }
 
   // Initialize KV cache
-  void init(const ggma::GGMAConfig &cfg, int cache_size);
+  void init(const ggma::GGMAConfig &cfg, int max_total_tokens);
 
   /**
    * @brief Transpose cache with "0213" permutation [0,2,1,3]
    * @param is_k_cache true for K cache, false for V cache
    * @param perm Permutation string (must be "0213")
-   * @param seq_len Sequence length dimension
-   * @param num_heads Number of attention heads
-   * @param head_dim Head dimension
+   *
+   * Uses the internally stored _shape to determine buffer dimensions.
+   * Updates _shape after transposition to reflect the new layout.
    */
-  void transpose(bool is_k_cache, const char *perm, size_t seq_len, size_t num_heads,
-                 size_t head_dim);
+  void transpose(bool is_k_cache, const char *perm);
 };
 
 // Utility functions for KVCacheDataType
