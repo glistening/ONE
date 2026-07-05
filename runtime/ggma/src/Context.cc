@@ -78,7 +78,7 @@ uint64_t bufsize_for(const nnfw_tensorinfo *ti)
 ggma::Context::Context(const char *package_path) : _package_path(package_path)
 {
   _cfg = load_config(_package_path);
-  _cache.init(_cfg, _cfg.cache_size);
+  _cache.init(_cfg, _cfg.max_total_tokens);
 }
 
 ggma::GGMAConfig ggma::Context::load_config(const std::string &package_path)

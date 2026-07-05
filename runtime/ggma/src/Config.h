@@ -65,7 +65,7 @@ struct ModelConfig
 struct GGMAConfig
 {
   ModelConfig model; // Model architecture details
-  int cache_size = 32;
+  int max_total_tokens = 32;
   int ubatch = 32;
   KVCacheDataType kv_cache_type = KVCacheDataType::FLOAT32; // KV cache data type
 };

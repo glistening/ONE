@@ -16,6 +16,7 @@
 
 #include "Config.h"
 #include "KVCache.h"
+#include "Transpose.h"
 
 #include <cstring>
 #include <stdexcept>
@@ -65,45 +66,35 @@ bool is_supported_type(KVCacheDataType type)
   }
 }
 
-void KVCache::transpose(bool is_k_cache, const char *perm, size_t seq_len, size_t num_heads,
-                        size_t head_dim)
+void KVCache::transpose(bool is_k_cache, const char *perm)
 {
-  if (perm == nullptr || strcmp(perm, "0213") != 0)
-    throw std::runtime_error("Only \"0213\" permutation is supported");
-
   std::vector<std::vector<uint8_t>> &cache_vector = is_k_cache ? k : v;
   const size_t element_bytes = element_size();
-  const size_t head_bytes = head_dim * element_bytes;
 
   for (size_t i = 0; i < cache_vector.size(); ++i)
   {
-    std::vector<uint8_t> transposed_cache = cache_vector[i];
-    uint8_t *input_data = cache_vector[i].data();
-    uint8_t *output_data = transposed_cache.data();
-
-    for (size_t s = 0; s < seq_len; ++s) // seq_len
-    {
-      for (size_t h = 0; h < num_heads; ++h) // num_heads
-      {
-        // source offset: s * (num_heads * head_bytes) + h * head_bytes
-        // target offset: h * (seq_len * head_bytes) + s * head_bytes
-        uint8_t *src_ptr = input_data + s * (num_heads * head_bytes) + h * head_bytes;
-        uint8_t *dst_ptr = output_data + h * (seq_len * head_bytes) + s * head_bytes;
-        memcpy(dst_ptr, src_ptr, head_bytes);
-      }
-    }
-
-    cache_vector[i] = std::move(transposed_cache);
+    transpose_4d(cache_vector[i].data(), perm, _shape, element_bytes);
   }
+
+  // Update _shape to reflect the permuted layout.
+  size_t old[4] = {_shape[0], _shape[1], _shape[2], _shape[3]};
+  for (int i = 0; i < 4; i++)
+    _shape[i] = old[perm[i] - '0'];
 }
 
-void KVCache::init(const ggma::GGMAConfig &cfg, int cache_size)
+void KVCache::init(const ggma::GGMAConfig &cfg, int max_total_tokens)
 {
   if (cfg.model.n_layers <= 0)
     throw std::runtime_error("n_layers not properly initialized");
 
   // Set KV cache data type from config
   data_type = cfg.kv_cache_type;
+
+  // Store the logical shape of each layer's buffer: [1, seq_len, num_heads, head_dim]
+  _shape[0] = 1;
+  _shape[1] = max_total_tokens;
+  _shape[2] = cfg.model.num_attention_heads;
+  _shape[3] = cfg.model.hidden_size / cfg.model.num_attention_heads;
 
   // Allocate space for K and V caches for each layer
   // Total: n_layers * 2 vectors (K and V for each layer)
@@ -112,7 +103,8 @@ void KVCache::init(const ggma::GGMAConfig &cfg, int cache_size)
 
   for (int i = 0; i < cfg.model.n_layers; ++i)
   {
-    size_t buffer_size = cfg.model.hidden_size * cache_size * element_size();
+    // buffer_size = prod(_shape) * element_size
+    size_t buffer_size = _shape[0] * _shape[1] * _shape[2] * _shape[3] * element_size();
     k[i].resize(buffer_size, 0);
     v[i].resize(buffer_size, 0);
   }

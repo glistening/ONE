@@ -54,10 +54,8 @@ GGMA_STATUS Context::generate(ggma_token *tokens, size_t n_tokens, size_t n_toke
     _cache.set_pos(n_tokens);
 
     // 3. Transpose KV caches to the layout expected by the decoder.
-    _cache.transpose(true /* k */, "0213", _cfg.model.num_attention_heads, _cfg.cache_size,
-                     _cfg.model.hidden_size / _cfg.model.num_attention_heads);
-    _cache.transpose(false /* v */, "0213", _cfg.model.num_attention_heads, _cfg.cache_size,
-                     _cfg.model.hidden_size / _cfg.model.num_attention_heads);
+    _cache.transpose(true /* k */, "0213");
+    _cache.transpose(false /* v */, "0213");
 
     // 4. Unembed: obtain logits from the hidden state.
     unemb(hidden, n_tokens, logits); // logits = unemb(hidden)
